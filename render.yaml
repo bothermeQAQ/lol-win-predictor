@@ -1,0 +1,26 @@
+# Render Blueprint for the LoL win-predictor backend (FastAPI).
+# Render reads this when you create a "Blueprint" from the GitHub repo and
+# auto-configures the service — you only fill in FRONTEND_ORIGIN afterwards.
+#
+# Notes:
+#  * The slim requirements-api.txt is used (no torch/streamlit/shap) so a free
+#    instance builds fast and stays under the 512 MB memory limit.
+#  * models/demo/ ships in the repo and is loaded ONCE at startup by absolute path
+#    (src/api/server.py), so no working-directory assumptions are made.
+#  * PORT is injected by Render; the app binds 0.0.0.0:$PORT.
+services:
+  - type: web
+    name: lol-win-predictor-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements-api.txt
+    startCommand: uvicorn api.server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: PYTHONPATH
+        value: src
+      - key: FRONTEND_ORIGIN
+        sync: false          # set to your Vercel URL after the frontend deploys,
+                             # e.g. https://lol-win-predictor.vercel.app

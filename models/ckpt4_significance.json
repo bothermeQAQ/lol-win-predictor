@@ -1,0 +1,101 @@
+[
+  {
+    "regime": "A",
+    "label": "LightGBM: +region \u2212 \u2014region",
+    "dauc": 0.009208093218158298,
+    "ci": [
+      0.0025704297605915055,
+      0.01571157195577785
+    ],
+    "p": 0.006,
+    "sig": "SIGNIFICANT"
+  },
+  {
+    "regime": "A",
+    "label": "LogReg:  +region \u2212 \u2014region",
+    "dauc": 0.0012177706378878606,
+    "ci": [
+      0.00012857861849674968,
+      0.002228884719119137
+    ],
+    "p": 0.026,
+    "sig": "SIGNIFICANT"
+  },
+  {
+    "regime": "A",
+    "label": "LightGBM \u2212 LogReg  (both \u2014region)",
+    "dauc": -0.0017377472381664427,
+    "ci": [
+      -0.01058872995789625,
+      0.007420668494449966
+    ],
+    "p": 0.668,
+    "sig": "within noise"
+  },
+  {
+    "regime": "A",
+    "label": "LightGBM \u2212 LogReg  (both +region)",
+    "dauc": 0.006252575342103994,
+    "ci": [
+      -0.0025413527626860634,
+      0.014442504190000694
+    ],
+    "p": 0.17,
+    "sig": "within noise"
+  },
+  {
+    "regime": "A",
+    "label": "ChampPoolNet \u2212 LogReg (both +region)",
+    "dauc": -0.008229342208302848,
+    "ci": [
+      -0.020066531913969374,
+      0.003032060143350473
+    ],
+    "p": 0.15,
+    "sig": "within noise"
+  },
+  {
+    "regime": "B",
+    "label": "LightGBM \u2212 LogReg",
+    "dauc": 0.006792571893405985,
+    "ci": [
+      0.003867916801530866,
+      0.009689204689154731
+    ],
+    "p": 0.0,
+    "sig": "SIGNIFICANT"
+  },
+  {
+    "regime": "B",
+    "label": "LightGBM \u2212 BernoulliNB",
+    "dauc": 0.01607191600108704,
+    "ci": [
+      0.013114223463542385,
+      0.01922048301611521
+    ],
+    "p": 0.0,
+    "sig": "SIGNIFICANT"
+  },
+  {
+    "regime": "B",
+    "label": "ChampPoolNet \u2212 LogReg",
+    "dauc": 0.0038217195867805698,
+    "ci": [
+      0.000326330914407641,
+      0.007285460772915536
+    ],
+    "p": 0.032,
+    "sig": "SIGNIFICANT"
+  },
+  {
+    "regime": "B",
+    "label": "LightGBM \u2212 ChampPoolNet",
+    "dauc": 0.0029708523066254156,
+    "ci": [
+      0.00022223536728773757,
+      0.005628461059190495
+    ],
+    "p": 0.036,
+    "sig": "SIGNIFICANT"
+  }
+]

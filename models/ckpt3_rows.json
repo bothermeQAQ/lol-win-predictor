@@ -1,0 +1,83 @@
+[
+  {
+    "model": "Majority (predict red)",
+    "regime": "\u2014",
+    "nfeat": 0,
+    "acc": 0.5422263181631013,
+    "f1_blue": 0.0,
+    "f1_macro": 0.3515987540525078,
+    "auc": 0.5
+  },
+  {
+    "model": "LogisticRegression (baseline)",
+    "regime": "A (draft-only)",
+    "nfeat": 706,
+    "acc": 0.5414705882352941,
+    "f1_blue": 0.4053401144310235,
+    "f1_macro": 0.516112418603625,
+    "auc": 0.5422718942463319
+  },
+  {
+    "model": "BernoulliNB (baseline)",
+    "regime": "A (draft-only)",
+    "nfeat": 706,
+    "acc": 0.5441176470588235,
+    "f1_blue": 0.4336175395858709,
+    "f1_macro": 0.5260786631481447,
+    "auc": 0.5436506764052176
+  },
+  {
+    "model": "LightGBM (+region)",
+    "regime": "A (draft-only)",
+    "nfeat": 709,
+    "acc": 0.5503921568627451,
+    "f1_blue": 0.19402460456942003,
+    "f1_macro": 0.44113194878369033,
+    "auc": 0.5497422402263238
+  },
+  {
+    "model": "ChampPoolNet (+region, emb)",
+    "regime": "A (draft-only)",
+    "nfeat": 149,
+    "acc": 0.5429411764705883,
+    "f1_blue": 0.13216679076693968,
+    "f1_macro": 0.41097293490968756,
+    "auc": 0.5352603226759169
+  },
+  {
+    "model": "LogisticRegression (baseline)",
+    "regime": "B (draft+objectives)",
+    "nfeat": 714,
+    "acc": 0.7229411764705882,
+    "f1_blue": 0.6928260869565217,
+    "f1_macro": 0.7202523291925466,
+    "auc": 0.7846333438905981
+  },
+  {
+    "model": "BernoulliNB (baseline)",
+    "regime": "B (draft+objectives)",
+    "nfeat": 714,
+    "acc": 0.715392156862745,
+    "f1_blue": 0.6930965218310604,
+    "f1_macro": 0.7138821426448054,
+    "auc": 0.7755864558099853
+  },
+  {
+    "model": "LightGBM (+region)",
+    "regime": "B (draft+objectives)",
+    "nfeat": 717,
+    "acc": 0.7232352941176471,
+    "f1_blue": 0.6955021033329738,
+    "f1_macro": 0.720920249258364,
+    "auc": 0.7913521091560529
+  },
+  {
+    "model": "ChampPoolNet (+region, emb)",
+    "regime": "B (draft+objectives)",
+    "nfeat": 157,
+    "acc": 0.7236274509803922,
+    "f1_blue": 0.6934870066325975,
+    "f1_macro": 0.7209289893468263,
+    "auc": 0.7883812568494275
+  }
+]

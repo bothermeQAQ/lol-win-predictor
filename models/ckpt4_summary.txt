@@ -1,0 +1,201 @@
+====================================================================================================
+CHECKPOINT 4 — ablations / significance / transfer / patch / hyper-params / cases
+====================================================================================================
+labeled matches=50999  train=40799 (fit=36719 val=4080)  test=10200
+floor (predict red)=0.5422   seed=42   bootstrap=1000x
+champ-embed vocab=173(+pad)  emb_dim=32  hidden=64
+
+####################################################################################################
+# SECTION 1 — ABLATION GRID  (model x regime x region; feature-matched)
+####################################################################################################
+
+[regime A = draft-only] building features ...
+[regime A] grid done in 7.0s
+
+[regime B = draft+objectives] building features ...
+[regime B] grid done in 8.8s
+
+regime  model           region  nfeat   acc      F1_blue   F1_macro  AUC     
+--------------------------------------------------------------------------------
+A       LogReg          —       706     0.5415   0.4053    0.5161    0.5423
+A       LogReg          +region 709     0.5423   0.4068    0.5171    0.5435
+A       BernoulliNB     —       706     0.5441   0.4336    0.5261    0.5437
+A       BernoulliNB     +region 709     0.5435   0.4427    0.5281    0.5448
+A       LightGBM        —       706     0.5462   0.1369    0.4145    0.5405
+A       LightGBM        +region 709     0.5504   0.1940    0.4411    0.5497
+A       ChampPoolNet    —       146     0.5351   0.3571    0.4965    0.5287
+A       ChampPoolNet    +region 149     0.5429   0.1322    0.4110    0.5353
+A       OneHotMLP       —       706     0.5340   0.4632    0.5258    0.5428
+A       OneHotMLP       +region 709     0.5339   0.4250    0.5166    0.5439
+--------------------------------------------------------------------------------
+B       LogReg          —       714     0.7229   0.6928    0.7203    0.7846
+B       LogReg          +region 717     0.7215   0.6912    0.7188    0.7846
+B       BernoulliNB     —       714     0.7154   0.6931    0.7139    0.7756
+B       BernoulliNB     +region 717     0.7158   0.6940    0.7143    0.7753
+B       LightGBM        —       714     0.7245   0.6967    0.7222    0.7900
+B       LightGBM        +region 717     0.7232   0.6955    0.7209    0.7914
+B       ChampPoolNet    —       154     0.7216   0.6884    0.7184    0.7864
+B       ChampPoolNet    +region 157     0.7236   0.6935    0.7209    0.7884
+B       OneHotMLP       —       714     0.7235   0.6988    0.7217    0.7833
+B       OneHotMLP       +region 717     0.7217   0.7058    0.7209    0.7844
+--------------------------------------------------------------------------------
+Region effect = compare the two rows (— vs +region) of the SAME model. Regime A judged on AUC.
+
+####################################################################################################
+# SECTION 2 — SIGNIFICANCE  (1000x bootstrap 95% CI; paired AUC differences)
+####################################################################################################
+
+regime  model           region   AUC      95% CI (bootstrap)    
+----------------------------------------------------------------
+A       LogReg          —        0.5423   [0.5319, 0.5537]
+A       LogReg          +region  0.5435   [0.5331, 0.5550]
+A       BernoulliNB     —        0.5437   [0.5331, 0.5550]
+A       BernoulliNB     +region  0.5448   [0.5340, 0.5562]
+A       LightGBM        —        0.5405   [0.5292, 0.5512]
+A       LightGBM        +region  0.5497   [0.5386, 0.5613]
+A       ChampPoolNet    —        0.5287   [0.5181, 0.5393]
+A       ChampPoolNet    +region  0.5353   [0.5247, 0.5468]
+A       OneHotMLP       —        0.5428   [0.5321, 0.5537]
+A       OneHotMLP       +region  0.5439   [0.5328, 0.5549]
+----------------------------------------------------------------
+B       LogReg          —        0.7846   [0.7759, 0.7930]
+B       LogReg          +region  0.7846   [0.7757, 0.7930]
+B       BernoulliNB     —        0.7756   [0.7662, 0.7839]
+B       BernoulliNB     +region  0.7753   [0.7660, 0.7835]
+B       LightGBM        —        0.7900   [0.7812, 0.7981]
+B       LightGBM        +region  0.7914   [0.7825, 0.7993]
+B       ChampPoolNet    —        0.7864   [0.7774, 0.7945]
+B       ChampPoolNet    +region  0.7884   [0.7794, 0.7964]
+B       OneHotMLP       —        0.7833   [0.7744, 0.7917]
+B       OneHotMLP       +region  0.7844   [0.7756, 0.7925]
+----------------------------------------------------------------
+
+--- REGIME A : region-vs-nonlinearity decomposition (judged on AUC) ---
+  [region alone] same model, +region minus —region:
+  LightGBM: +region − —region                          dAUC=+0.0092  95%CI[+0.0026,+0.0157]  p=0.006  -> SIGNIFICANT
+  LogReg:  +region − —region                           dAUC=+0.0012  95%CI[+0.0001,+0.0022]  p=0.026  -> SIGNIFICANT
+  [nonlinear − linear, FEATURE-MATCHED] same region setting:
+  LightGBM − LogReg  (both —region)                    dAUC=-0.0017  95%CI[-0.0106,+0.0074]  p=0.668  -> within noise
+  LightGBM − LogReg  (both +region)                    dAUC=+0.0063  95%CI[-0.0025,+0.0144]  p=0.170  -> within noise
+  ChampPoolNet − LogReg (both +region)                 dAUC=-0.0082  95%CI[-0.0201,+0.0030]  p=0.150  -> within noise
+
+--- REGIME B : between-model contrasts (all +region, feature-matched) ---
+  LightGBM − LogReg                                    dAUC=+0.0068  95%CI[+0.0039,+0.0097]  p=0.000  -> SIGNIFICANT
+  LightGBM − BernoulliNB                               dAUC=+0.0161  95%CI[+0.0131,+0.0192]  p=0.000  -> SIGNIFICANT
+  ChampPoolNet − LogReg                                dAUC=+0.0038  95%CI[+0.0003,+0.0073]  p=0.032  -> SIGNIFICANT
+  LightGBM − ChampPoolNet                              dAUC=+0.0030  95%CI[+0.0002,+0.0056]  p=0.036  -> SIGNIFICANT
+
+####################################################################################################
+# SECTION 3 — EMBEDDING vs ONE-HOT  (same MLP head + same side features; champions swapped)
+####################################################################################################
+
+regime  champion repr   region   nfeat   acc      AUC      
+------------------------------------------------------------
+A       pooled-embed    —        146     0.5351   0.5287
+A       multi-hot       —        706     0.5340   0.5428
+A       pooled-embed    +region  149     0.5429   0.5353
+A       multi-hot       +region  709     0.5339   0.5439
+------------------------------------------------------------
+B       pooled-embed    —        154     0.7216   0.7864
+B       multi-hot       —        714     0.7235   0.7833
+B       pooled-embed    +region  157     0.7236   0.7884
+B       multi-hot       +region  717     0.7217   0.7844
+------------------------------------------------------------
+Paired AUC difference (embedding − one-hot), +region:
+  regime A: ChampPoolNet − OneHotMLP                   dAUC=-0.0086  95%CI[-0.0194,+0.0020]  p=0.112  -> within noise
+  regime B: ChampPoolNet − OneHotMLP                   dAUC=+0.0040  95%CI[+0.0012,+0.0069]  p=0.010  -> SIGNIFICANT
+
+####################################################################################################
+# SECTION 4 — LEAKAGE CONTROL  (regime-B features + END-OF-GAME leaky cols)
+# *** NOT A REAL RESULT — illustrates how post-hoc state inflates the score ***
+####################################################################################################
+
+  honest  regime-B LightGBM (+region)         : acc=0.7232  AUC=0.7914
+  LEAKY   regime-B + kills/inhib/baron/duration: acc=0.9808  AUC=0.9983
+  -> leakage moves AUC by +0.2069 and accuracy by +0.2575  (why those columns are banned).
+
+####################################################################################################
+# SECTION 5 — CROSS-REGION 3x3 TRANSFER  (strongest draft-only: regime-A LightGBM, NO region)
+####################################################################################################
+
+  regime A (draft-only — the headline transfer test)   rows: na1=3422  kr=3397  euw1=3381
+    train\test  na1                   kr                    euw1                  
+    na1         acc0.554/AUC0.522     acc0.506/AUC0.499     acc0.563/AUC0.531     
+    kr          acc0.527/AUC0.512     acc0.520/AUC0.535     acc0.549/AUC0.521     
+    euw1        acc0.554/AUC0.502     acc0.501/AUC0.505     acc0.572/AUC0.524     
+    mean diagonal (same-region) AUC=0.5271   mean off-diagonal (transfer) AUC=0.5116   gap=+0.0156
+
+  regime B (draft+objectives — control)   rows: na1=3422  kr=3397  euw1=3381
+    train\test  na1                   kr                    euw1                  
+    na1         acc0.711/AUC0.769     acc0.735/AUC0.794     acc0.722/AUC0.785     
+    kr          acc0.710/AUC0.766     acc0.729/AUC0.798     acc0.716/AUC0.782     
+    euw1        acc0.658/AUC0.766     acc0.641/AUC0.784     acc0.674/AUC0.781     
+    mean diagonal (same-region) AUC=0.7828   mean off-diagonal (transfer) AUC=0.7794   gap=+0.0033
+
+####################################################################################################
+# SECTION 6 — PATCH ROBUSTNESS  (pooled regime-B LightGBM; data is mostly 16.10)
+####################################################################################################
+
+  patch     n_test   blue_rate  acc      F1_blue   AUC      
+  --------------------------------------------------------
+  16.9      3022     0.4490     0.7214   0.6904    0.7888   
+  16.10     6367     0.4603     0.7236   0.6960    0.7920   
+  16.11     811      0.4698     0.7275   0.7096    0.7963   
+  --------------------------------------------------------
+
+  pooled regime-B LightGBM  AUC (no patch feature) = 0.7914
+  + patch one-hot (16.10/16.11/16.9)        AUC = 0.7914
+  -> dAUC=+0.0001  95%CI[-0.0009,+0.0009]  p=0.892  (no significant change)
+
+####################################################################################################
+# SECTION 7 — HYPER-PARAMETER SENSITIVITY  (regime-B LightGBM, +region, test AUC)
+####################################################################################################
+
+  sweep learning_rate (others at default):
+    learning_rate AUC      best_iter 
+    0.01          0.7795   6         
+    0.03          0.7914   374       
+    0.1           0.7903   100       
+    0.3           0.7853   24        
+
+  sweep num_leaves (others at default):
+    num_leaves    AUC      best_iter 
+    15            0.7912   410       
+    31            0.7914   374       
+    63            0.7897   228       
+    127           0.7886   182       
+
+  sweep n_estimators (others at default):
+    n_estimators  AUC      best_iter 
+    100           0.7860   100       
+    300           0.7910   300       
+    1000          0.7889   1000      
+    3000          0.7810   3000      
+
+####################################################################################################
+# SECTION 8 — CASE STUDIES  (regime-B LightGBM, +region)
+####################################################################################################
+
+  [most confident CORRECT]
+    matchId=NA1_5557961866  region=na1  patch=16.9
+    objectives: Blood->RED, Tower->RED, Dragon->RED, RiftHerald->none   (blue got 0/4, red got 3/4)
+    model P(blue win)=0.056 -> predict RED    actual=RED  (correct)
+
+  [most confident WRONG — upset (early objectives lost the game anyway)]
+    matchId=EUW1_7870164239  region=euw1  patch=16.11
+    objectives: Blood->RED, Tower->RED, Dragon->RED, RiftHerald->none   (blue got 0/4, red got 3/4)
+    model P(blue win)=0.077 -> predict RED    actual=BLUE  (WRONG)
+
+  [KR cross-region upset (confident-wrong in Korea)]
+    matchId=KR_8201503869  region=kr  patch=16.9
+    objectives: Blood->RED, Tower->RED, Dragon->RED, RiftHerald->RED   (blue got 0/4, red got 4/4)
+    model P(blue win)=0.098 -> predict RED    actual=BLUE  (WRONG)
+
+  [split objectives 2-2 — model still leans on which objectives + side prior]
+    matchId=EUW1_7862702861  region=euw1  patch=16.10
+    objectives: Blood->BLUE, Tower->RED, Dragon->BLUE, RiftHerald->RED   (blue got 2/4, red got 2/4)
+    model P(blue win)=0.141 -> predict RED    actual=RED  (correct)
+
+====================================================================================================
+CHECKPOINT 4 complete in 107.7s. Wrote models/ckpt4_summary.txt, ckpt4_grid.json, ckpt4_significance.json
+====================================================================================================

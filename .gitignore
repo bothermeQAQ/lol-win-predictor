@@ -1,0 +1,36 @@
+# ── Python ──────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# ── Node / Next.js (frontend/ also has its own .gitignore) ──
+node_modules/
+.next/
+out/
+.vercel/
+
+# ── Env / secrets — NEVER commit the Riot API key or local config ──
+.env
+.env.local
+.env*.local
+# (frontend/.env.local.example IS committed as the template)
+
+# ── Raw data & Riot collector state (large / regenerable / sensitive) ──
+data/
+checkpoints/
+*.sqlite
+
+# ── Stray heavy design artifact from the Claude Design handoff ──
+frontend/uploads/
+
+# ── OS / editor ──
+.DS_Store
+.idea/
+.vscode/
+
+# ───────────────────────────────────────────────────────────
+# NOTE: models/demo/ is intentionally NOT ignored. The trained LightGBM
+# models, SHAP explainers, vocab and meta.json must ship with the repo so the
+# deployed backend (src/api/server.py) can load them once at startup.
+# ───────────────────────────────────────────────────────────
