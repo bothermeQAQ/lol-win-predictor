@@ -1,10 +1,12 @@
 # Slim runtime deps for the DEPLOYED backend (src/api/server.py) — used by render.yaml.
 #
-# The serving path only needs the LightGBM models + native TreeSHAP. It does NOT
-# need torch, streamlit, shap, or scikit-learn. Verified locally that LightGBM's
-# native pred_contrib == the saved shap explainer (max|diff| = 0.0) and that
-# blue_win_prob is shap-independent, so dropping shap changes no result. This keeps
-# the build small enough for a free Render instance.
+# The serving path needs the LightGBM models + native TreeSHAP. It does NOT need
+# torch, streamlit, or shap. Verified locally that LightGBM's native pred_contrib
+# == the saved shap explainer (max|diff| = 0.0) and that blue_win_prob is
+# shap-independent, so dropping shap changes no result and keeps the build small.
+#
+# scikit-learn IS required: the demo models are LGBMClassifier (LightGBM's
+# scikit-learn wrapper), so joblib.load needs sklearn's base classes to unpickle.
 #
 # (The full requirements.txt — with torch/streamlit/shap — is still used for local
 #  development, training, and the Streamlit demo.)
@@ -15,5 +17,6 @@ pydantic>=2.6
 numpy>=2.0,<3
 pandas>=2.2
 scipy>=1.11
-lightgbm==4.6.0      # pinned: must match the version the demo models were saved with
+scikit-learn>=1.3   # needed to unpickle the LGBMClassifier (sklearn wrapper)
+lightgbm==4.6.0     # pinned: must match the version the demo models were saved with
 joblib>=1.3
