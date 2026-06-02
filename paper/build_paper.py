@@ -134,7 +134,8 @@ story.append(P(
     "remarkably stable across regions (3×3 transfer gap 0.003) and patches (p = 0.89 for a "
     "patch feature). High-elo red side wins 54.2%, with KR closest to even — a descriptive "
     "MMR-matching effect. We report 1000× bootstrap confidence intervals throughout and a "
-    "labeled leakage control (AUC 0.998). A live interactive demo is deployed online.", abst_st))
+    "labeled leakage control (AUC 0.998). A live interactive demo is deployed at "
+    "lol-win-predictor-web.onrender.com.", abst_st))
 story.append(P(
     "<b>Keywords:</b> esports analytics; win prediction; negative result; cross-region "
     "generalization; gradient boosting; SHAP; data leakage.", key_st))
@@ -171,24 +172,29 @@ story.append(P(
 # ============================================================= 2. RELATED WORK
 story.append(P("2.&nbsp; Related Work", h1))
 story.append(P(
-    "<b>Composition-only models.</b> Prior work that predicts LoL outcomes from champion "
-    "composition alone typically lands around 55–62% accuracy [2, 3]. A standard explanation "
-    "is self-optimization: because players draft to counter and balance, the champion-vs-champion "
-    "advantage is largely arbitraged away, pushing a pure-composition predictor toward the "
-    "50% coin-flip. Our high-elo setting is the extreme of this mechanism, and we indeed find "
-    "even less signal than the 55–62% band."))
+    "<b>Composition-only models.</b> Predicting LoL outcomes from champion composition "
+    "<i>alone</i> is weak: community ML projects report ≈55% (Naive Bayes 55.3%) and ≈53% "
+    "(tuned random forest) accuracy [2]. A standard explanation is self-optimization — because "
+    "players draft to counter and balance, the champion-vs-champion advantage is largely "
+    "arbitraged away, pushing a pure-composition predictor toward the 50% coin-flip. Our "
+    "high-elo setting is the extreme of this mechanism."))
 story.append(P(
-    "<b>Adding player skill.</b> When models incorporate <i>player-on-champion mastery</i> "
-    "(how much experience/performance a player has on the champion they locked), pre-game "
-    "accuracy jumps to ≈75% [3, 4]; the player–champion term is repeatedly the single "
-    "largest determinant. Combining pre-game and in-game state further improves over pre-game "
-    "alone [4]. The lever we (deliberately) do not pull is player-on-champion mastery, which is "
-    "not a direct Match-V5 endpoint; we return to it as the natural next step."))
+    "<b>Adding player skill.</b> The signal lives in <i>player-on-champion mastery</i>, not the "
+    "draft. Do et al. [3] reach <b>75.1%</b> accuracy at champion-select from players’ "
+    "experience on their picked champions, concluding that individual champion skill matters "
+    "“regardless of team composition”; summing each player’s per-champion win rate has been "
+    "reported as high as ≈93% [3]. Peer-reviewed work that combines pre-game and in-game "
+    "predictors improves further and notes early-game events are <i>less</i> predictive than "
+    "late-game ones [4]. The lever we deliberately do not pull is player-on-champion mastery "
+    "(not a direct Match-V5 endpoint); we return to it as the natural next step."))
 story.append(P(
-    "<b>Side and region.</b> A blue/red asymmetry is well documented, and at the top of the "
-    "ladder the red-side edge is larger (community and Riot analyses put it near ~6% in "
-    "Masters+), commonly attributed to MMR-matching dynamics and amplified by the unusually "
-    "volatile 2026 apex ladder [1, 5]. We treat this as descriptive/correlational, not causal."))
+    "<b>Side and region.</b> A blue/red asymmetry is documented; community and industry "
+    "analyses report a larger red edge at the top of the ladder — red ≈53% vs blue ≈47% in "
+    "Master+ [5]. The proposed mechanism is MMR matching: at the apex ladder few players queue "
+    "at once, so the two teams’ MMR cannot always be balanced, and the side seeded with the "
+    "higher-MMR players (historically red) wins more often [5]. This predicts a region with a "
+    "larger, more evenly-matched apex pool should sit closest to 50/50 — consistent with our "
+    "KR observation (§3). We treat all of this as descriptive/correlational, not causal."))
 story.append(P(
     "<b>Our position.</b> Relative to prior work we contribute a high-elo-specific study across "
     "three regions, a rigorously-tested <i>negative</i> result for the draft (with confidence "
@@ -219,7 +225,9 @@ story.append(fig(os.path.join(PAP, "fig1_side.png"), COLW,
     "side is a useful prior, motivating distinct blue/red feature blocks."))
 story.append(P(
     "<b>(1) Side and region.</b> Figure 1 shows red wins 54.2% overall (blue 45.8%), with a "
-    "regional gradient: blue-win 49.1% (KR), 45.0% (NA), 43.3% (EUW). This sets the majority "
+    "regional gradient: blue-win 49.1% (KR), 45.0% (NA), 43.3% (EUW). The ordering matches the "
+    "apex MMR-matching account (§2): KR’s larger, more evenly-matched apex queue sits closest "
+    "to 50/50, while thinner NA/EUW queues leave a bigger red edge. This sets the majority "
     "floor and motivates encoding side explicitly."))
 story.append(fig(os.path.join(EDA, "winrate_by_objective.png"), COLW,
     "<b>Figure 2.</b> Blue-win probability conditioned on which side took each first "
@@ -313,8 +321,11 @@ story.append(P(
     "Crucially, once features are matched the nonlinear model does not help — LightGBM minus "
     "logistic regression is ΔAUC = −0.0017 (p = 0.668) without region and +0.0063 "
     "(p = 0.170) with it; learned embeddings minus one-hot is −0.0086 (p = 0.112) (Table 2). "
-    "There is no detectable champion-interaction signal in high elo — even weaker than the "
-    "55–62% reported for lower elos, exactly as the self-optimization view predicts."))
+    "There is no detectable champion-interaction signal in high elo. Measured as <i>lift over "
+    "the majority-class baseline</i>, the gain is essentially nil — best regime-A accuracy is "
+    "0.5504 against the 0.5422 floor (under one point), and AUC 0.54–0.55 is barely above the "
+    "0.50 of random ranking — even smaller than the ≈+5 points a (near-balanced) low-elo "
+    "composition-only model gains over its 50% baseline [2]: self-optimization at its extreme."))
 # --- Table 2: significance
 t2 = [["Contrast (ΔAUC)", "Δ", "95% CI", "p"],
       ["A: region alone (LGBM)", "+.0092", "[+.003,+.016]", ".006*"],
@@ -331,8 +342,9 @@ story.append(tbl(t2, [COLW*x for x in (0.40, 0.16, 0.27, 0.17)],
     "practically equivalent.", fs=6.6))
 story.append(P(
     "<b>Finding 2 — objectives recover a strong, invariant signal.</b> Regime B reaches "
-    "AUC ≈ 0.79 (LightGBM 0.7914), squarely inside the 72–75% band reported for pre-game "
-    "models — with first tower dominating the SHAP attributions. We emphasize the honest "
+    "AUC ≈ 0.79 (LightGBM 0.7914; accuracy 0.72), in line with the ≈74% accuracy reported for "
+    "early-game / real-time models [4] — first tower dominates the SHAP attributions. We "
+    "emphasize the honest "
     "reading of Table 2: in regime B LightGBM is <i>statistically</i> the best (p&lt;0.001 vs "
     "both baselines) but the margins are &lt;0.02 AUC — the signal is in the <i>features, not "
     "the model</i>; the models are practically equivalent."))
@@ -404,6 +416,11 @@ story.append(P(
     "blue win probability and its top SHAP factors update live. In the all-objectives-none "
     "state the number barely moves as champions are swapped — the negative result made "
     "tangible — and flipping <i>first tower</i> makes it jump from ≈46% to ≈77%."))
+story.append(fig(os.path.join(PAP, "demo_screenshot.png"), COLW,
+    "<b>Figure 4.</b> The deployed demo in the all-objectives-none state: regime A, "
+    "<b>46.2%</b> blue, “DRAFT IMPACT · LOW — champion composition barely moves the model.” "
+    "The paper’s negative result as a live readout; flipping <i>first tower</i> switches to "
+    "regime B and the number jumps to ≈77%."))
 story.append(P(
     "<b>Reproducibility.</b> All results use a fixed seed (42) and a single stratified 80/20 "
     "split (50,999 → 40,799 train / 10,200 test), with the champion vocabulary fit on the "
@@ -417,14 +434,23 @@ story.append(P("References", h1))
 refs = [
     "[1] Riot Games. <i>Riot Developer Portal</i> — Match-V5 API and regional routing "
     "(americas / asia / europe). developer.riotgames.com.",
-    "[2] Champion-composition win-prediction in MOBA games (~55–62% accuracy). "
-    "Course-provided reference.",
-    "[3] Player-on-champion mastery as the dominant pre-game predictor (~75% accuracy). "
-    "Course-provided reference.",
-    "[4] Combined pre-game and in-game outcome modeling for League of Legends. "
-    "Course-provided reference.",
-    "[5] Blue/red side and regional win-rate asymmetry in high-elo League of Legends; "
-    "MMR-matching dynamics. Course-provided reference.",
+    "[2] <i>(community ML projects)</i> J. Ou, <i>Smart Winner Predictor for League of "
+    "Legends</i> (Weka, ~50k Riot-API matches): Naive Bayes 55.3% from team composition; "
+    "J. Kang, <i>lol-ai</i> (GitHub): tuned random forest ≈53%.",
+    "[3] T. D. Do, S. I. Wang, D. S. Yu, M. G. McMillian, R. P. McMahan. <i>Using Machine "
+    "Learning to Predict Game Outcomes Based on Player-Champion Experience in League of "
+    "Legends.</i> Proc. FDG ’21, 2021. 75.1% at champion-select. arXiv:2108.02799. "
+    "<i>Supporting:</i> T. Huang, D. Kim, V. Leung (2015), summed per-champion player win "
+    "rates ≈92.8% (Naive Bayes).",
+    "[4] <i>Applications of Linear and Ensemble-Based Machine Learning for Predicting Winning "
+    "Teams in League of Legends.</i> Applied Sciences 15(10):5241, MDPI, 2025 (peer-reviewed): "
+    "combining pre-game and in-game predictors improves; early-game events are less predictive "
+    "than late. <i>Supporting:</i> <i>League of Legends: Real-Time Result Prediction</i>, "
+    "arXiv:2309.02449, 2023 (LightGBM best, ≈74.4% on early-game data).",
+    "[5] <i>(community / industry analyses)</i> <i>Red Side Advantage in High-Elo League of "
+    "Legends</i>, Riftfeed, 2024 — per League of Graphs, Master+ red ≈53% vs blue ≈47%, "
+    "attributed to higher-MMR players placed on red; A. van Roon (Riot Games), official "
+    "blue/red win rates by region, 2020 (via Esports Tales).",
 ]
 for r in refs:
     story.append(P(r, ref_st))
