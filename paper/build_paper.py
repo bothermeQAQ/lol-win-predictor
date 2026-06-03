@@ -24,7 +24,7 @@ PW, PH = letter
 M = 0.6 * inch
 GUT = 0.26 * inch
 COLW = (PW - 2 * M - GUT) / 2.0
-TOPH = 2.62 * inch
+TOPH = 3.62 * inch
 
 # ----------------------------------------------------------------- styles
 ss = getSampleStyleSheet()
@@ -32,25 +32,25 @@ def S(name, **kw):
     base = kw.pop("parent", ss["Normal"])
     return ParagraphStyle(name, parent=base, **kw)
 
-title_st = S("title", fontName="Helvetica-Bold", fontSize=15.5, leading=18,
+title_st = S("title", fontName="Helvetica-Bold", fontSize=16, leading=19,
              alignment=TA_CENTER, spaceAfter=3)
-sub_st   = S("sub", fontName="Helvetica-Oblique", fontSize=9.5, leading=12,
+sub_st   = S("sub", fontName="Helvetica-Oblique", fontSize=10.5, leading=13,
              alignment=TA_CENTER, textColor=colors.HexColor("#333333"), spaceAfter=6)
-auth_st  = S("auth", fontName="Helvetica", fontSize=9.5, leading=12, alignment=TA_CENTER,
+auth_st  = S("auth", fontName="Helvetica", fontSize=11, leading=13.5, alignment=TA_CENTER,
              spaceAfter=2)
-abhead   = S("abh", fontName="Helvetica-Bold", fontSize=9.5, leading=12, alignment=TA_LEFT,
+abhead   = S("abh", fontName="Helvetica-Bold", fontSize=11, leading=13.5, alignment=TA_LEFT,
              spaceBefore=4, spaceAfter=2)
-abst_st  = S("abst", fontName="Helvetica", fontSize=8.8, leading=11.2, alignment=TA_JUSTIFY)
-key_st   = S("key", fontName="Helvetica", fontSize=8.3, leading=10.5, alignment=TA_JUSTIFY,
+abst_st  = S("abst", fontName="Helvetica", fontSize=11, leading=12.9, alignment=TA_JUSTIFY)
+key_st   = S("key", fontName="Helvetica", fontSize=10, leading=12.5, alignment=TA_JUSTIFY,
              textColor=colors.HexColor("#222222"))
-body     = S("body", fontName="Helvetica", fontSize=8.7, leading=10.8, alignment=TA_JUSTIFY,
-             spaceAfter=3.5)
-h1       = S("h1", fontName="Helvetica-Bold", fontSize=10.2, leading=12.5, spaceBefore=6,
-             spaceAfter=2.5, textColor=colors.HexColor("#0b1f4d"))
-cap      = S("cap", fontName="Helvetica", fontSize=7.6, leading=9.2, alignment=TA_JUSTIFY,
-             textColor=colors.HexColor("#222222"), spaceBefore=2, spaceAfter=5)
-ref_st   = S("ref", fontName="Helvetica", fontSize=7.6, leading=9.2, alignment=TA_LEFT,
-             leftIndent=8, firstLineIndent=-8, spaceAfter=1.5)
+body     = S("body", fontName="Helvetica", fontSize=11, leading=12.4, alignment=TA_JUSTIFY,
+             spaceAfter=2.4)
+h1       = S("h1", fontName="Helvetica-Bold", fontSize=12.5, leading=14, spaceBefore=3,
+             spaceAfter=2, textColor=colors.HexColor("#0b1f4d"))
+cap      = S("cap", fontName="Helvetica", fontSize=9, leading=10.2, alignment=TA_JUSTIFY,
+             textColor=colors.HexColor("#222222"), spaceBefore=2, spaceAfter=2.5)
+ref_st   = S("ref", fontName="Helvetica", fontSize=9, leading=10.3, alignment=TA_LEFT,
+             leftIndent=9, firstLineIndent=-9, spaceAfter=1)
 
 # ----------------------------------------------------------------- doc frames
 top = Frame(M, PH - M - TOPH, PW - 2 * M, TOPH, id="top",
@@ -84,9 +84,10 @@ def fig(path, w, caption):
     from reportlab.lib.utils import ImageReader
     iw, ih = ImageReader(path).getSize()
     img = Image(path, width=w, height=w * ih / iw)
+    img.hAlign = "CENTER"
     return KeepTogether([img, P(caption, cap)])
 
-def tbl(data, colw, caption, fs=7.0, header_bg="#0b1f4d", align=None):
+def tbl(data, colw, caption, fs=8.0, header_bg="#0b1f4d", align=None):
     t = Table(data, colWidths=colw, hAlign="LEFT")
     style = [
         ("FONT", (0, 0), (-1, -1), "Helvetica", fs),
@@ -128,8 +129,8 @@ story.append(P(
     "feature regimes: <i>draft-only</i> (champion picks, bans, summoner spells) and "
     "<i>draft + four first-objective</i> flags. <b>Finding 1 (negative):</b> at the top of the "
     "ladder the draft is near-uninformative — every draft-only model sits on the majority "
-    "floor (AUC ≈ 0.54), and once features are matched, a gradient-boosted model beats "
-    "logistic regression by only ΔAUC = +0.006 (p = 0.17). <b>Finding 2:</b> adding early "
+    "floor (AUC ≈ 0.54), and once features are matched a gradient-boosted model does not beat "
+    "logistic regression (ΔAUC = −0.002, p = 0.67). <b>Finding 2:</b> adding early "
     "objectives recovers a strong signal (AUC ≈ 0.79, first tower dominant) that is "
     "remarkably stable across regions (3×3 transfer gap 0.003) and patches (p = 0.89 for a "
     "patch feature). High-elo red side wins 54.2%, with KR closest to even — a descriptive "
@@ -204,9 +205,10 @@ story.append(P(
 # ============================================================= 3. DATASET & EDA
 story.append(P("3.&nbsp; Dataset and Exploratory Analysis", h1))
 story.append(P(
-    "<b>Collection.</b> We seed from each region’s apex ladder (Challenger–Master) and pull "
-    "ranked matches through the Riot Match-V5 API with correct regional routing (NA→americas, "
-    "KR→asia, EUW→europe). The corpus is <b>51,000</b> matches — 17,000 each from NA, KR, "
+    "<b>Collection.</b> Seeded from each region’s apex league lists (Challenger–Master), we "
+    "pull ranked matches through the Riot Match-V5 API with correct regional routing "
+    "(NA→americas, KR→asia, EUW→europe), parallelized across the three regional hosts and "
+    "deduplicated by <i>matchId</i>. The corpus is <b>51,000</b> matches — 17,000 each from NA, KR, "
     "and EUW — on patches <b>16.9–16.11</b> (mostly 16.10), played <b>2026-04-29</b> to "
     "<b>2026-05-30</b>. We drop one match with <i>winner</i>=0, leaving <b>50,999</b> labeled "
     "games. Every <i>matchId</i> is round-tripped against the API and the final CSV contains "
@@ -313,14 +315,16 @@ t1 = [["Model", "A acc", "A AUC", "B acc", "B F1", "B AUC"],
 story.append(tbl(t1, [COLW*x for x in (0.255, 0.149, 0.149, 0.149, 0.149, 0.149)],
     "<b>Table 1.</b> Main results (all +region). Regime A (draft-only) vs B "
     "(draft+objectives). Majority floor (predict red) = 0.5422 acc. In regime A every AUC sits "
-    "on the floor; in B all models reach ≈0.78–0.79. Numbers copied from "
-    "<i>ckpt4_summary.txt</i>."))
+    "on the floor; in B all models reach ≈0.78–0.79. (OneHotMLP is the one-hot control arm of "
+    "the embedding ablation; its slightly higher B-F1 is within noise and does not change the "
+    "models’ practical equivalence.) Numbers copied from <i>ckpt4_summary.txt</i>."))
 story.append(P(
     "<b>Finding 1 — the draft is near-uninformative (negative result).</b> In regime A every "
     "model sits on the floor: AUC ranges 0.529–0.550 against a 0.5422 floor (Table 1). "
     "Crucially, once features are matched the nonlinear model does not help — LightGBM minus "
-    "logistic regression is ΔAUC = −0.0017 (p = 0.668) without region and +0.0063 "
-    "(p = 0.170) with it; learned embeddings minus one-hot is −0.0086 (p = 0.112) (Table 2). "
+    "logistic regression is ΔAUC = −0.0017 (p = 0.668) — this feature-matched, no-region "
+    "contrast is the clean test of nonlinearity (the +0.0063, p = 0.170, with region folds in "
+    "the region term); learned embeddings minus one-hot is −0.0086 (p = 0.112) (Table 2). "
     "There is no detectable champion-interaction signal in high elo. Measured as <i>lift over "
     "the majority-class baseline</i>, the gain is essentially nil — best regime-A accuracy is "
     "0.5504 against the 0.5422 floor (under one point), and AUC 0.54–0.55 is barely above the "
@@ -339,7 +343,7 @@ story.append(tbl(t2, [COLW*x for x in (0.40, 0.16, 0.27, 0.17)],
     "<b>Table 2.</b> 1000× bootstrap paired AUC differences (* = 95% CI excludes 0). In "
     "regime A only the (tiny) region term is significant; nonlinearity and embeddings are within "
     "noise. In B the model gaps are significant but &lt;0.02 AUC — statistically real, "
-    "practically equivalent.", fs=6.6))
+    "practically equivalent.", fs=7.4))
 story.append(P(
     "<b>Finding 2 — objectives recover a strong, invariant signal.</b> Regime B reaches "
     "AUC ≈ 0.79 (LightGBM 0.7914; accuracy 0.72), in line with the ≈74% accuracy reported for "
@@ -361,7 +365,7 @@ t3 = [["A (draft)", "na1", "kr", "euw1", "", "B (+obj)", "na1", "kr", "euw1"],
 story.append(tbl(t3, [COLW*x for x in (0.135,0.105,0.105,0.115,0.02,0.135,0.105,0.105,0.115)],
     "<b>Table 3.</b> Cross-region 3×3 transfer (train-row × test-col, AUC). Regime A is "
     "indistinguishable from chance everywhere (diag 0.527 / off-diag 0.512). Regime B transfers "
-    "almost perfectly: diagonal 0.783 vs off-diagonal 0.779, gap only <b>0.003</b>.", fs=6.4))
+    "almost perfectly: diagonal 0.783 vs off-diagonal 0.779, gap only <b>0.003</b>.", fs=7.0))
 story.append(P(
     "<b>Cross-region transfer (Table 3).</b> Using the strongest draft-only model, the A-matrix "
     "is flat at chance (mean diagonal 0.5271, off-diagonal 0.5116; the +0.0156 gap is within "
@@ -394,8 +398,9 @@ story.append(P(
 story.append(P("7.&nbsp; Conclusion", h1))
 story.append(P(
     "Three sentences summarize the study. In high elo the champion draft is near-uninformative "
-    "— a clean negative result, consistent with and stronger than the 55–62% reported for "
-    "lower elos. Early objectives recover a strong signal (AUC ≈ 0.79) that is invariant "
+    "— a clean negative result, consistent with and at the extreme of the ≈55% reported for "
+    "composition-only models at lower elos [2]. Early objectives recover a strong signal "
+    "(AUC ≈ 0.79) that is invariant "
     "across three regions and three patches — what is predictable is region-agnostic game "
     "mechanics, while region differences live only in unpredictable champion preferences. The "
     "high-elo red-side advantage (54.2%, KR closest to even) is a descriptive MMR-matching "
@@ -415,12 +420,14 @@ story.append(P(
     "front-end over a FastAPI service). Enter two drafts and toggle the early objectives: the "
     "blue win probability and its top SHAP factors update live. In the all-objectives-none "
     "state the number barely moves as champions are swapped — the negative result made "
-    "tangible — and flipping <i>first tower</i> makes it jump from ≈46% to ≈77%."))
-story.append(fig(os.path.join(PAP, "demo_screenshot.png"), COLW,
-    "<b>Figure 4.</b> The deployed demo in the all-objectives-none state: regime A, "
+    "tangible — and flipping <i>first tower</i> makes it jump from ≈46% to ≈77%. (On the free "
+    "tier the backend sleeps when idle; the first load may take ~30–60 s while it wakes.)"))
+story.append(fig(os.path.join(PAP, "demo_wincore.png"), COLW * 0.86,
+    "<b>Figure 4.</b> Center readout of the deployed demo "
+    "(lol-win-predictor-web.onrender.com) in the all-objectives-none state: regime A, "
     "<b>46.2%</b> blue, “DRAFT IMPACT · LOW — champion composition barely moves the model.” "
-    "The paper’s negative result as a live readout; flipping <i>first tower</i> switches to "
-    "regime B and the number jumps to ≈77%."))
+    "The negative result as a live readout; setting <i>first tower</i> switches to regime B "
+    "and the number jumps to ≈77%."))
 story.append(P(
     "<b>Reproducibility.</b> All results use a fixed seed (42) and a single stratified 80/20 "
     "split (50,999 → 40,799 train / 10,200 test), with the champion vocabulary fit on the "
