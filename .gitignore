@@ -16,8 +16,11 @@ out/
 .env*.local
 # (frontend/.env.local.example IS committed as the template)
 
-# ── Raw data & Riot collector state (large / regenerable / sensitive) ──
-data/
+# ── Raw data & Riot collector state ──
+# The main dataset (data/raw_matches.csv, PII-free) IS committed for reproducibility;
+# everything else under data/ (e.g. the small test sample) + collector state stays out.
+data/*
+!data/raw_matches.csv
 checkpoints/
 *.sqlite
 

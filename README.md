@@ -97,11 +97,11 @@ lol-win-predictor/
 │   └── api/server.py  api/verify_api.py           # FastAPI backend (served model)
 ├── frontend/                      # Next.js demo UI (calls the backend)
 ├── models/                        # ckpt outputs + demo/ (trained models + SHAP explainers, committed)
-├── data/                          # raw_matches.csv (gitignored; PII-free)
+├── data/raw_matches.csv           # the dataset (50,999 matches, PII-free, committed)
 ├── eda/                           # EDA figures
 └── paper/DSC148_paper.pdf         # the write-up (+ build_paper.py, figures)
 ```
 
 ## Notes
 - **API key.** The Riot key is read from `$RIOT_API_KEY` at runtime — never hardcoded or committed.
-- `data/` and `checkpoints/` are gitignored (raw data + collector state); `models/demo/` **is** committed so the demo/API run out of the box.
+- The dataset `data/raw_matches.csv` (PII-free) and `models/demo/` **are** committed so the demo/API run out of the box; `checkpoints/` (collector state) stays gitignored.
