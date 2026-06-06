@@ -1,3 +1,25 @@
+# Quick Start / How to Run
+
+**What this is.** A binary classifier for **high-elo League of Legends** that predicts whether the **blue side wins**, with an interactive demo. Headline finding: the champion *draft* is near-uninformative in high elo (AUC ≈ 0.54), while **early objectives** recover a strong, region- and patch-invariant signal (AUC ≈ 0.79).
+
+**🌐 Live demo:** **https://lol-win-predictor-web.onrender.com**
+> ⏳ The **first** load can take **~30–60 s** while the backend cold-starts (free tier sleeps when idle) — that's expected, not a bug.
+
+**▶️ Run the backend locally** (from the project root):
+```bash
+PORT=8008 PYTHONPATH=src python3 src/api/server.py
+```
+
+**▶️ Run the frontend locally** (in a second terminal):
+```bash
+cd frontend && npm install && npm run dev
+```
+`frontend/.env.local` already points at `http://localhost:8008`. Open the URL the dev server prints (default http://localhost:3000).
+
+**📄 Paper / write-up:** [`paper/DSC148_paper.pdf`](paper/DSC148_paper.pdf).
+
+---
+
 # DSC148 — League of Legends 胜负预测(蓝 vs 红)
 
 二分类:给定一局对局的**赛前 / 早期**信息,预测蓝方(team1 / teamId 100)是否获胜。
