@@ -1,6 +1,13 @@
-# Quick Start / How to Run
+# DSC 148 — High-Elo League of Legends Win Prediction (Blue vs Red)
 
-**What this is.** A binary classifier for **high-elo League of Legends** that predicts whether the **blue side wins**, with an interactive demo. Headline finding: the champion *draft* is near-uninformative in high elo (AUC ≈ 0.54), while **early objectives** recover a strong, region- and patch-invariant signal (AUC ≈ 0.79).
+A binary classifier that predicts whether the **blue side wins** a high-elo League of Legends game, plus an interactive demo. **Headline finding:** the champion *draft* is near-uninformative in high elo (AUC ≈ 0.54); **early objectives** (first blood / tower / dragon / herald) recover a strong, region- and patch-invariant signal (AUC ≈ 0.79). What decides high-elo games is early-game map state, not who you pick.
+
+**Author:** Yonghao Wang — DSC 148, University of California San Diego
+**Code:** https://github.com/bothermeQAQ/lol-win-predictor · **Live demo:** https://lol-win-predictor-web.onrender.com · **Paper:** [`paper/DSC148_paper.pdf`](paper/DSC148_paper.pdf)
+
+---
+
+## Quick Start / How to Run
 
 **🌐 Live demo:** **https://lol-win-predictor-web.onrender.com**
 > ⏳ The **first** load can take **~30–60 s** while the backend cold-starts (free tier sleeps when idle) — that's expected, not a bug.
@@ -20,83 +27,81 @@ cd frontend && npm install && npm run dev
 
 ---
 
-# DSC148 — League of Legends 胜负预测(蓝 vs 红)
+## Overview
+- **Problem.** Given the pre-game draft (champions, bans) and the earliest in-game objectives, predict the blue side's win probability — and quantify how much each information source actually contributes.
+- **What the demo does.** Pick a region and five champions per side, optionally toggle who took each early objective, and get the blue win probability plus the top SHAP factors, live. Swapping champions barely moves the number (the negative result, made tangible); flipping *first tower* makes it jump.
 
-二分类:给定一局对局的**赛前 / 早期**信息,预测蓝方(team1 / teamId 100)是否获胜。
-数据 `data/raw_matches.csv` 为 Riot Match-V5 真实数据(na1 / kr / euw1,补丁 16.9–16.11,约 5.1 万局)。
+## Dataset
+- **Source:** Riot **Match-V5** API (real ranked matches), collected by `src/collect_data.py` — seeded from each region's apex ladder, parallelized across regional hosts, deduplicated by `matchId`.
+- **Size:** **51,000** matches (**50,999** labeled after dropping one tie row). ≥ 50k instances.
+- **Regions:** NA, KR, EUW — **17,000 each**.
+- **Patches / dates:** 16.9–16.11 (mostly 16.10), 2026-04-29 → 2026-05-30.
+- **Unit:** one ranked match. **Label:** does the blue side (team 1 / teamId 100) win?
+- **Features:** champion picks + bans + summoner spells (the *draft*), region; plus 4 first-objective flags (first blood / tower / dragon / rift herald). Post-game state (kill counts, gold, duration, inhibitor, baron) is **excluded** to prevent label leakage (single source of truth: `src/data_utils.py`).
+- **No PII:** the CSV contains no PUUIDs or summoner names.
+- **EDA** (figures in `eda/`, discussed in paper §3): red side wins **54.2%** overall (KR closest to even at 49.1%); first tower gives the biggest win-rate swing (**+0.405**); champion picks diverge sharply by region (KR is distinct). These findings motivate the two feature regimes and the side/region encoding.
 
-**泄漏纪律(单一来源 `src/data_utils.py`):**
-- 赛制 A(draft-only):10 个英雄 pick + 召唤师技能 + 10 个 ban。
-- 赛制 B(draft + early objectives):A + 4 个首目标旗标(一血 / 一塔 / 首龙 / 首先锋)。
-- 永久封禁(赛后状态):各类击杀数、首抑制 / 首男爵、游戏时长等。
+## Predictive Task
+- **Input:** region + 5 blue champions + 5 red champions + (optional) 4 early-objective flags.
+- **Output:** P(blue wins) → predicted winner.
+- **Metrics:** Accuracy, blue-class F1, **ROC-AUC** (primary, because the classes are imbalanced — majority floor = **54.2%** red).
+- **Two feature regimes:** **A** = draft-only; **B** = draft + early objectives. The A → B contrast is the main experiment.
 
-**主结论:** 纯 BP(赛制 A)几乎不可预测(AUC≈0.54);加入早期目标(赛制 B)后跳到 AUC≈0.79,
-跨地区、跨补丁高度稳定 —— 决定胜负的是早期目标,而非 BP 本身。
+## Models
+- **Baselines:** Majority class, **Logistic Regression**, **Bernoulli Naive Bayes** (champions as an order-invariant bag — natural null models for "draft as a bag of champions").
+- **Proposed:** **LightGBM** (gradient boosting, +region) and **ChampPoolNet** (32-d champion embeddings, mean-pooled per team), with a one-hot MLP as the control arm for the embedding-vs-one-hot ablation.
+- **Feature design:** *team-symmetric multi-hot* (order-invariant within a team; separate blue/red column blocks to keep a side prior; no lane/slot encoding); region and patch as one-hot. Explainability via **SHAP**.
+- **Optimization:** stratified 80/20 split (seed 42), early stopping on a held-out val split, light hyperparameter sweep (learning rate 0.03, 31 leaves). Libraries: lightgbm, scikit-learn, torch, shap, fastapi, Next.js.
+- See paper §5 for unsuccessful tries (learned embeddings and nonlinearity buy nothing once features are matched; an out-of-distribution "all-objectives-none" issue fixed with a two-model demo) and engineering troubles (LightGBM/PyTorch OpenMP deadlock, sparse vectorization, pandas 3.0 NaN handling).
 
----
+## Results (summary)
+| Regime | Best model | Accuracy | ROC-AUC |
+|---|---|---:|---:|
+| Majority floor | — | 0.542 | 0.500 |
+| **A — draft only** | LightGBM (+region) | 0.550 | **0.550** |
+| **B — draft + early objectives** | LightGBM (+region) | 0.724 | **0.791** |
 
-## 环境
+**Takeaway.** The draft alone is ≈ chance: feature-matched, the nonlinear model does **not** beat logistic regression (ΔAUC = −0.002, *p* = 0.67), and learned embeddings don't beat one-hot. Early objectives lift AUC to **≈ 0.79**, and that signal is stable across regions (3×3 transfer gap **0.003**) and patches (*p* = 0.89 for a patch feature); first tower dominates the SHAP attributions. Full comparison / significance / transfer tables, ablations, three case studies, and parameter-sensitivity sweeps are in the paper §6 (exact numbers emitted to `models/ckpt4_summary.txt`).
 
+## Demo
+**Live:** https://lol-win-predictor-web.onrender.com (first load ~30–60 s while the free-tier backend wakes).
+
+**What it does:** select a region + 5 champions per side, toggle early objectives, and see P(blue win) + the top SHAP factors update live. With no objective set, the number barely moves as you swap champions — the negative result, made tangible. Set **first tower → blue** and it jumps from ~46% to ~77%.
+
+**Example input.** Region **NA** · Blue: Aatrox, Ahri, Akali, Akshan, Alistar · Red: Ambessa, Amumu, Anivia, Annie, Aphelios · Objectives: **First Tower → Blue** → **output ≈ 76.5% blue win, model B** (vs ≈46.2% with no objectives).
+
+**Local run.** Backend `PORT=8008 PYTHONPATH=src python3 src/api/server.py`; frontend `cd frontend && npm install && npm run dev` (`.env.local` → :8008). A Streamlit version also exists: `python3 -m streamlit run src/demo_app.py`.
+
+![Demo screenshot — broadcast UI showing 46.2% blue (regime A) and the "DRAFT IMPACT · LOW" readout](paper/demo_screenshot.png)
+
+## Reproducing the results
 ```bash
-pip install -r requirements.txt          # Homebrew Python 用户加 --user --break-system-packages
+pip install -r requirements.txt                 # Homebrew Python: add --user --break-system-packages
+PYTHONPATH=src python3 src/baselines.py          # baselines (LogReg / Naive Bayes)
+PYTHONPATH=src python3 src/proposed.py           # LightGBM + ChampPoolNet
+PYTHONPATH=src python3 src/ablations.py          # ablations / significance / transfer / patch / hyperparams / cases
+PYTHONPATH=src python3 src/train_demo_model.py   # train + persist the served demo models -> models/demo/
+PYTHONPATH=src python3 src/api/verify_api.py     # proves the served API == demo_core (|diff| = 0.00)
 ```
-主要依赖:lightgbm / scikit-learn / torch(建模),streamlit / shap(demo)。
+Results are written to `models/` (`ckpt4_summary.txt` holds the paper's exact numbers). Trained demo models are committed under `models/demo/`, so the API and demo run **without** retraining. (Collecting fresh data needs a Riot key: `export RIOT_API_KEY='RGAPI-...'` then `python3 src/collect_data.py`.)
 
-## 复现各检查点(可选)
-
-```bash
-PYTHONPATH=src python3 src/baselines.py          # ckpt2 基线(LogReg / NB)
-PYTHONPATH=src python3 src/proposed.py           # ckpt3 LightGBM + ChampPoolNet
-PYTHONPATH=src python3 src/ablations.py          # ckpt4 消融 / 显著性 / 迁移 / 补丁 / 超参 / 案例
+## Repository structure
 ```
-结果写入 `models/`(`ckpt3_table.txt`、`ckpt4_summary.txt` 等)。
-
----
-
-## Demo(检查点 5)
-
-服务 **pooled regime-B LightGBM(+region)** 作为主模型;另存一个 **draft-only regime-A 模型**专门给赛前基准用。
-预测 / 编码 / SHAP 全部从磁盘加载,**启动不重训**。
-
-> **为什么是两个模型?** 「四目标全无」这一赛前状态在训练数据里占 **0.000%**(一血 99.98% 的对局会分出),
-> 对 regime-B 属分布外(OOD)外推,会让它对换英雄虚假敏感、与「纯 BP 不可预测」的主结论矛盾。
-> 所以 demo 在全『无』时用诚实的 regime-A(genuinely flat,AUC≈0.54)出基准,任一目标打开就切回 regime-B(AUC≈0.79)。
-
-### 1) 训练并存盘模型(只需一次)
-
-```bash
-PYTHONPATH=src python3 src/train_demo_model.py
+lol-win-predictor/
+├── README.md  requirements.txt  requirements-api.txt  render.yaml  DEPLOY.md
+├── src/
+│   ├── collect_data.py            # Riot Match-V5 collector (key from $RIOT_API_KEY)
+│   ├── data_utils.py  features.py # loading + leakage discipline + feature encoders
+│   ├── baselines.py  proposed.py  ablations.py   # ckpt 2–4: models, ablations, significance
+│   ├── train_demo_model.py  demo_core.py  demo_app.py  demo_selftest.py
+│   └── api/server.py  api/verify_api.py           # FastAPI backend (served model)
+├── frontend/                      # Next.js demo UI (calls the backend)
+├── models/                        # ckpt outputs + demo/ (trained models + SHAP explainers, committed)
+├── data/                          # raw_matches.csv (gitignored; PII-free)
+├── eda/                           # EDA figures
+└── paper/DSC148_paper.pdf         # the write-up (+ build_paper.py, figures)
 ```
-产物写入 `models/demo/`:`lgbm_A.joblib` / `lgbm_B.joblib`、`explainer_A.joblib` / `explainer_B.joblib`(SHAP)、`vocabs.json`、`meta.json`。
-脚本会打印两个测试 AUC(regime A≈0.54 draft-only 基准、regime B≈0.79 主模型),确认 demo 模型与正文模型一致。
 
-### 2) 启动 demo
-
-```bash
-python3 -m streamlit run src/demo_app.py
-```
-浏览器打开终端给出的地址(默认 http://localhost:8501)。
-
-### 3) TA 怎么试(30 秒)
-
-1. 选 **地区**(na1 / kr / euw1)。
-2. 上来所有**目标开关 = 无** → 这是**纯赛前 / draft-only 预测**。
-   随便**换几个英雄**,会发现蓝方胜率**几乎不动**、贴近该地区基准(≈48–54%)。
-   ⚠️ 这是真实发现(纯 BP 不可预测),**不是 demo 坏了** —— 界面上有黄色提示说明。
-3. 现在把某个目标(例如**一塔 → 蓝**)打开 → 蓝方胜率**明显跳动**,
-   "早期目标带来的变化"指标会显示移动了多少个百分点。这正是 regime B 的主秀。
-4. 下方 **Top 贡献因子(SHAP)** 实时显示哪些因素在推高蓝 / 红方;
-   纯赛前状态几乎只有"地区基准"在起作用,打开目标后目标项立刻占据主导。
-
-**护栏:** 同一英雄在两方/同方重复选会报错并提示修正;英雄 / ban 留空有默认值不会崩。
-
-### 自测(可选)
-
-```bash
-PYTHONPATH=src python3 src/demo_selftest.py
-```
-无需 web server,直接验证:换英雄胜率几乎不动、翻目标开关胜率明显且方向正确、SHAP 符号正确、去重校验生效。
-
----
-
-`data/`、`checkpoints/` 已 gitignore(不提交原始数据);`models/`(含 demo 产物)会提交。
+## Notes
+- **API key.** The Riot key is read from `$RIOT_API_KEY` at runtime — never hardcoded or committed.
+- `data/` and `checkpoints/` are gitignored (raw data + collector state); `models/demo/` **is** committed so the demo/API run out of the box.
